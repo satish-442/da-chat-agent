@@ -1,0 +1,83 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+.app {
+  height: 100vh;
+  width: 100vw; /* make full screen width */
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background-color: #1abc9c;
+  padding: 12px;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  color: white;
+}
+
+.container {
+  flex: 1;
+  display: flex;
+  width: 100%;  /* take full width */
+  height: 100%;
+}
+
+.sidebar {
+  width: 150px;
+  background-color: #f4f4f4;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.menu-btn {
+  background-color: #1abc9c;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 4px;
+  text-align: left;
+  font-size: 14px;
+  text-decoration: none;
+  transition: 0.3s;
+}
+
+.menu-btn:hover {
+  background-color: #16a085;
+}
+
+.menu-btn.active {
+  background-color: #0e6655;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  background: #fff;
+  height: 100%;
+  width: 100%; /* stretch fully */
+}
+
+.page-content {
+  flex: 1; /* fills space above chat box */
+  overflow-y: auto; /* scroll if content grows */
+  padding-bottom: 10px;
+}
+
+.chat-box {
+  border-top: 1px solid #ccc;
+  padding: 12px;
+  background: #fafafa;
+  font-style: italic;
+  color: #555;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
