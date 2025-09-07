@@ -1,211 +1,232 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import {
   Box,
-  VStack,
   Input,
   Button,
+  VStack,
   HStack,
   Text,
-  IconButton,
-  Tooltip,
-  Image,
+  Spinner,
 } from "@chakra-ui/react";
-import { StarIcon } from "@chakra-ui/icons";
-import { FaRegStar } from "react-icons/fa";
-import { v4 as uuidv4 } from "uuid";
-import TypewriterText from "../utils/TypewriterText";
+import { SessionContext } from "../utils/SessionContext"; // ✅ Change this import
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+} from "recharts";
 
-function Chat() {
-  const [messages, setMessages] = useState([
-    {
-      id: uuidv4(),
-      role: "assistant",
-      isSaved: false,
-      timestamp: new Date().toISOString(),
-      parts: [
-        { type: "text", content: "Here’s what I found: ..." },
-        { type: "image", content: "https://via.placeholder.com/300" },
-        { type: "text", content: "Let me know if you want more." },
-      ],
-    },
-  ]);
-  const [input, setInput] = useState("");
-  const messagesEndRef = useRef(null);
+// A reusable component to render different chart types
+const ChartRenderer = ({ data, chartType }) => {
+  if (!data || !data.length || !chartType) {
+    return <Text color="red.500">No chart data or type provided.</Text>;
+  }
 
-  // Auto-scroll to latest message
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  // A simple way to guess the x and y axis keys
+  const keys = Object.keys(data[0]);
+  const xAxisKey = keys.find((key) => isNaN(data[0][key])) || keys[0];
+  const yAxisKey = keys.find((key) => !isNaN(data[0][key])) || keys[1];
 
-  // Restore saved messages on mount
-  useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("savedMessages") || "[]");
-    if (saved.length > 0) {
-      setMessages((prev) =>
-        prev.map((msg) => {
-          const match = saved.find((s) => s.id === msg.id);
-          return match ? { ...msg, isSaved: true } : msg;
-        })
+  if (!xAxisKey || !yAxisKey) {
+    return <Text color="red.500">Could not determine chart axes from data.</Text>;
+  }
+
+  switch (chartType) {
+    case "bar":
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={xAxisKey} />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey={yAxisKey} fill="#3182CE" />
+          </BarChart>
+        </ResponsiveContainer>
       );
-    }
-  }, []);
+    // Add other cases here for different chart types (e.g., 'line', 'pie')
+    case "line":
+      // Example for line chart
+      // return <LineChart ... />;
+      return <Text>Line chart support coming soon!</Text>;
+    default:
+      return <Text>Unsupported chart type: {chartType}</Text>;
+  }
+};
 
-  const sendMessage = () => {
+// New: A component to display each chat message and its content
+const ChatMessage = ({ msg, onSaveChart }) => {
+  return (
+    <Box
+      p={3}
+      borderRadius="md"
+      bg={msg.sender === "user" ? "blue.100" : "gray.100"}
+    >
+      <Text>{msg.text}</Text>
+      {msg.chart_data && msg.chart_type && (
+        <HStack mt={3} alignItems="flex-end" spacing={2}>
+          <Box height="300px" flex="1">
+            <ChartRenderer data={msg.chart_data} chartType={msg.chart_type} />
+          </Box>
+          <Button
+            size="sm"
+            colorScheme="green"
+            onClick={() => onSaveChart(msg.chart_data, msg.chart_type)}
+          >
+            Save Chart
+          </Button>
+        </HStack>
+      )}
+    </Box>
+  );
+};
+
+const Chat = () => {
+  const { sessionId, chatMessages, setChatMessages } = useContext(SessionContext);
+  const [chartID, setChartID] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const chatContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
+  
+  // New: Function to call the save chart API
+  const saveChart = async (chartData, chartType) => {
+    try {
+      const res = await fetch('http://127.0.0.1:8001/dashboard/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+         chart_ids: chartID // Send the chart ID in an array
+        }),
+      });
+
+      if (res.ok) {
+        setChatMessages((prev) => [
+          ...prev,
+          { sender: 'bot', text: 'Chart has been saved successfully!' },
+        ]);
+      } else {
+        setChatMessages((prev) => [
+          ...prev,
+          { sender: 'bot', text: 'Sorry, I could not save the chart.' },
+        ]);
+      }
+    } catch (err) {
+      console.error('Save API error:', err);
+      setChatMessages((prev) => [
+        ...prev,
+        { sender: 'bot', text: 'An unexpected error occurred while saving.' },
+      ]);
+    }
+  };
+
+  const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const userMsg = {
-      id: uuidv4(),
-      role: "user",
-      isSaved: false,
-      timestamp: new Date().toISOString(),
-      parts: [{ type: "text", content: input }],
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
+    const userMessage = { sender: "user", text: input };
+    setChatMessages((prev) => [...prev, userMessage]);
     setInput("");
+    setLoading(true);
 
-    // Simulated bot response
-    setTimeout(() => {
-      const responseParts = [
-        { type: "text", content: "Here’s what I found:" },
-        { type: "image", content: "https://via.placeholder.com/300" },
-        { type: "text", content: "Details below:" },
-        { type: "image", content: "https://via.placeholder.com/200" },
-        { type: "text", content: "Let me know if you want more." },
-      ];
+    try {
+      const initialRes = await fetch(`http://127.0.0.1:8001/insight/${sessionId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: userMessage.text }),
+      });
+      console.log("sessionId=", sessionId);
+      const initialData = await initialRes.json();
+      
+     //if ((!initialData.result_preview || !initialData.summary) && initialData.convert_to_chart_hint) {
+        
+        const chartApiUrl = "http://127.0.0.1:8001/chart/from_insight";
+        
+        const chartRes = await fetch(chartApiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: sessionId,
+            question: userMessage.text,
+            result_preview: initialData.result_preview || []
+          })
+        });
 
-      const botMsg = {
-        id: uuidv4(),
-        role: "assistant",
-        isSaved: false,
-        timestamp: new Date().toISOString(),
-        parts: responseParts,
-      };
+        const chartData = await chartRes.json();
+        console.log("chartData=", chartData);
+        setChartID((prev) => [...prev, chartData.chart_id]); // Store the returned chart ID
 
-      setMessages((prev) => [...prev, botMsg]);
-    }, 1000);
+        // const botMessage = {
+        //   sender: "bot",
+        //   text: initialData.summary || "Here is the chart result:",
+        //   chart_data: chartData.result_preview,
+        //   chart_type: chartData.chart_type
+        // };
+        // setMessages((prev) => [...prev, botMessage]);
+
+     // } else {
+        const botMessage = {
+          sender: "bot",
+          text: initialData.summary || "Here’s the result:",
+          chart_data: initialData.result_preview,
+          chart_type: "bar",
+        };
+        setChatMessages((prev) => [...prev, botMessage]);
+      //}
+
+    } catch (err) {
+      console.error("API error:", err);
+      setChatMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "Sorry, an error occurred while processing your request." }
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
-
-  // Save/unsave toggle
-  const toggleSave = (id) => {
-    setMessages((prev) => {
-      const updated = prev.map((msg) =>
-        msg.id === id ? { ...msg, isSaved: !msg.isSaved } : msg
-      );
-
-      const saved = updated.filter((msg) => msg.isSaved);
-      localStorage.setItem("savedMessages", JSON.stringify(saved));
-
-      return updated;
-    });
-  };
-
-  // Format timestamp nicely
-  const formatTime = (isoString) =>
-    new Date(isoString).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
 
   return (
-    <VStack spacing={4} height="100%" flex="1" minHeight="0">
-      {/* Messages area */}
-      <Box
-        flex="1"
+    <Box p={4}>
+      <VStack
+        ref={chatContainerRef}
+        align="stretch"
+        spacing={4}
+        height="70vh"
         overflowY="auto"
-        width="100%"
-        p={3}
-        bg="white"
-        borderRadius="md"
-        boxShadow="inner"
       >
-        {messages.map((msg) => (
-          <HStack
-            key={msg.id}
-            justify={msg.role === "user" ? "flex-end" : "flex-start"}
-            align="end"
-            mb={2}
-          >
-            {/* Assistant message: Button on the left */}
-            {msg.role === "assistant" && (
-              <Tooltip label={msg.isSaved ? "Unsave" : "Save"}>
-                <IconButton
-                  icon={msg.isSaved ? <StarIcon /> : <FaRegStar />}
-                  size="sm"
-                  variant="ghost"
-                  aria-label="save"
-                  color={msg.isSaved ? "yellow.400" : "gray.400"}
-                  onClick={() => toggleSave(msg.id)}
-                />
-              </Tooltip>
-            )}
-
-            <Box
-              px={4}
-              py={2}
-              bg={msg.role === "user" ? "blue.500" : "gray.100"}
-              color={msg.role === "user" ? "white" : "black"}
-              borderRadius="xl"
-              maxW="70%"
-            >
-              {msg.parts.map((part, idx) => {
-                if (part.type === "text") {
-                  return (
-                    <Text key={idx} fontSize="sm" mt={idx > 0 ? 2 : 0}>
-                      {msg.role === "assistant" &&
-                      idx === msg.parts.length - 1 ? (
-                        <TypewriterText text={part.content} />
-                      ) : (
-                        part.content
-                      )}
-                    </Text>
-                  );
-                } else if (part.type === "image") {
-                  return (
-                    <Image
-                      key={idx}
-                      src={part.content}
-                      alt={`Message media ${idx + 1}`}
-                      borderRadius="md"
-                      mt={2}
-                      maxW="100%"
-                    />
-                  );
-                } else {
-                  return null;
-                }
-              })}
-
-              {/* Timestamp */}
-              <Text fontSize="xs" mt={2} opacity={0.6} textAlign="right">
-                {formatTime(msg.timestamp)}
-              </Text>
-            </Box>
-          </HStack>
+        {chatMessages.map((msg, i) => (
+          <ChatMessage key={i} msg={msg} onSaveChart={saveChart} />
         ))}
-        <Box ref={messagesEndRef} />
-      </Box>
 
-      {/* Input box */}
-      <HStack width="100%">
+        {loading && (
+          <HStack>
+            <Spinner size="sm" />
+            <Text>Thinking...</Text>
+          </HStack>
+        )}
+      </VStack>
+
+      <HStack mt={4}>
         <Input
+          placeholder="Ask something..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type a message"
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          bg="white"
-          color="black"
         />
-        <Button
-          colorScheme="blue"
-          onClick={sendMessage}
-          isDisabled={!input.trim()}
-        >
+        <Button colorScheme="blue" onClick={sendMessage} isLoading={loading}>
           Send
         </Button>
       </HStack>
-    </VStack>
+    </Box>
   );
-}
+};
 
 export default Chat;

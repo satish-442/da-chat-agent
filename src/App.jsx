@@ -9,6 +9,7 @@ import Chat from "./pages/Chat";
 import Report from "./pages/Report";
 import Schedule from "./pages/Schedule";
 import "./App.css";
+import { SessionProvider } from "./utils/SessionContext";
 
 const Layout = ({ children }) => (
   <div className="app">
@@ -17,7 +18,7 @@ const Layout = ({ children }) => (
       <Sidebar />
       <main className="content">
         <div className="page-content">{children}</div>
-        <div className="chat-box">Hi, How can I help you</div>
+        {/* <div className="chat-box">Hi, How can I help you</div> */}
       </main>
     </div>
   </div>
@@ -25,23 +26,21 @@ const Layout = ({ children }) => (
 
 const App = () => {
   return (
-    <ChakraProvider> {/* 👈 Wrap your router here */}
-      <Router>
-        <Routes>
-          {/* Redirect root to Input */}
-          <Route path="/" element={<Navigate to="/input" replace />} />
-
-          <Route path="/input" element={<Layout><Input /></Layout>} />
-          <Route path="/clean" element={<Layout><Clean /></Layout>} />
-          <Route path="/profile" element={<Layout><Profile /></Layout>} />
-          <Route path="/chat" element={<Layout><Chat /></Layout>} />
-          <Route path="/report" element={<Layout><Report /></Layout>} />
-          <Route path="/schedule" element={<Layout><Schedule /></Layout>} />
-
-          {/* 404 fallback */}
-          <Route path="*" element={<Layout><h2>404 - Page Not Found</h2></Layout>} />
-        </Routes>
-      </Router>
+<ChakraProvider>
+      <SessionProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<Navigate to="/input" replace />} />
+            <Route path="/input" element={<Layout><Input /></Layout>} />
+            <Route path="/clean" element={<Layout><Clean /></Layout>} />
+            <Route path="/profile" element={<Layout><Profile /></Layout>} />
+            <Route path="/chat" element={<Layout><Chat /></Layout>} />
+            <Route path="/report" element={<Layout><Report /></Layout>} />
+            <Route path="/schedule" element={<Layout><Schedule /></Layout>} />
+            <Route path="*" element={<Layout><h2>404 - Page Not Found</h2></Layout>} />
+          </Routes>
+        </Router>
+      </SessionProvider>
     </ChakraProvider>
   );
 };
