@@ -1,0 +1,22 @@
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  #report-container {
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .chart-box {
+    page-break-inside: avoid;
+    height: auto !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .chakra-modal__content {
+    display: none !important;
+  }
+}
