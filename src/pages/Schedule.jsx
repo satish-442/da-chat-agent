@@ -21,6 +21,7 @@ import {
   Td,
 } from "@chakra-ui/react";
 import { SessionContext } from "../utils/SessionContext";
+import Api from "../utils/Api";
 
 const Schedule = () => {
   const { sessionId } = useContext(SessionContext);
@@ -75,25 +76,15 @@ const Schedule = () => {
     setReportData(null);
 
     try {
-      const apiUrl = `http://127.0.0.1:8001/schedule/create`;
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || "Failed to create schedule.");
-      }
-
-      setResult(data);
+      const response = await Api.post("/schedule/create", payload);
+      setResult(response.data);
     } catch (err) {
       console.error("API error:", err);
-      setError(err.message || "An unexpected error occurred.");
+      if (err.response && err.response.data && err.response.data.detail) {
+        setError(err.response.data.detail);
+      } else {
+        setError(err.message || "An unexpected error occurred.");
+      }
     } finally {
       setLoading(false);
     }
@@ -110,18 +101,19 @@ const Schedule = () => {
     setReportData(null);
 
     try {
-      const apiUrl = `http://127.0.0.1:8001/schedule/run_now/${sessionId}/${result.schedule_id}`;
-      const response = await fetch(apiUrl);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || "Failed to execute job.");
-      }
-
-      setReportResult(data);
+      const response = await Api.get(
+        `/schedule/run_now/${sessionId}/${result.schedule_id}`
+      );
+      setReportResult(response.data);
     } catch (err) {
       console.error("API error:", err);
-      setError(err.message || "An unexpected error occurred during job execution.");
+      if (err.response && err.response.data && err.response.data.detail) {
+        setError(err.response.data.detail);
+      } else {
+        setError(
+          err.message || "An unexpected error occurred during job execution."
+        );
+      }
     } finally {
       setRunning(false);
     }
@@ -137,18 +129,20 @@ const Schedule = () => {
     setError(null);
 
     try {
-      const apiUrl = `http://127.0.0.1:8001/schedule/report/${sessionId}/${result.schedule_id}`;
-      const response = await fetch(apiUrl);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || "Failed to generate report.");
-      }
-
-      setReportData(data);
+      const response = await Api.get(
+        `/schedule/report/${sessionId}/${result.schedule_id}`
+      );
+      setReportData(response.data);
     } catch (err) {
       console.error("Report API error:", err);
-      setError(err.message || "An unexpected error occurred while generating the report.");
+      if (err.response && err.response.data && err.response.data.detail) {
+        setError(err.response.data.detail);
+      } else {
+        setError(
+          err.message ||
+            "An unexpected error occurred while generating the report."
+        );
+      }
     } finally {
       setReportLoading(false);
     }

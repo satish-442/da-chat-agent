@@ -100,7 +100,7 @@ const Chat = () => {
   // New: Function to call the save chart API
   const saveChart = async (chartData, chartType) => {
     try {
-      const res = await fetch('http://127.0.0.1:8001/dashboard/add', {
+      const res = await fetch('http://127.0.0.1:8000/dashboard/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -138,7 +138,7 @@ const Chat = () => {
     setLoading(true);
 
     try {
-      const initialRes = await fetch(`http://127.0.0.1:8001/insight/${sessionId}`, {
+      const initialRes = await fetch(`http://127.0.0.1:8000/insight/${sessionId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: userMessage.text }),
@@ -148,7 +148,7 @@ const Chat = () => {
       
      //if ((!initialData.result_preview || !initialData.summary) && initialData.convert_to_chart_hint) {
         
-        const chartApiUrl = "http://127.0.0.1:8001/chart/from_insight";
+        const chartApiUrl = "http://127.0.0.1:8000/chart/from_insight";
         
         const chartRes = await fetch(chartApiUrl, {
           method: 'POST',

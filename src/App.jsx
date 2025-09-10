@@ -32,8 +32,8 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Navigate to="/input" replace />} />
             <Route path="/input" element={<Layout><Input /></Layout>} />
-            <Route path="/clean" element={<Layout><Clean /></Layout>} />
             <Route path="/profile" element={<Layout><Profile /></Layout>} />
+            <Route path="/clean" element={<Layout><Clean /></Layout>} />
             <Route path="/chat" element={<Layout><Chat /></Layout>} />
             <Route path="/report" element={<Layout><Report /></Layout>} />
             <Route path="/schedule" element={<Layout><Schedule /></Layout>} />

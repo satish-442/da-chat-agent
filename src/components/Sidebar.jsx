@@ -4,8 +4,8 @@ import { NavLink } from "react-router-dom";
 const Sidebar = () => {
   const menuItems = [
     { path: "/input", label: "Input" },
-    { path: "/clean", label: "Clean" },
     { path: "/profile", label: "Profile" },
+    { path: "/clean", label: "Clean" },
     { path: "/chat", label: "Chat" },
     { path: "/report", label: "My report" },
     { path: "/schedule", label: "My schedule" },

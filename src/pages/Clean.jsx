@@ -16,6 +16,7 @@ import {
   HStack,
 } from "@chakra-ui/react";
 import { SessionContext } from "../utils/SessionContext";
+import Api from "../utils/Api";
 
 const Clean = () => {
   const { sessionId } = useContext(SessionContext);
@@ -39,25 +40,19 @@ const Clean = () => {
     setResult(null);
 
     try {
-      const apiUrl = `http://127.0.0.1:8001/clean/${sessionId}`;
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ instruction: instruction.trim() }),
+      const response = await Api.post(`/clean/${sessionId}`, {
+        instruction: instruction.trim(),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || "Failed to apply cleaning instruction.");
-      }
-
-      setResult(data);
+      setResult(response.data);
     } catch (err) {
       console.error("API error:", err);
-      setError(err.message || "An unexpected error occurred.");
+      if (err.response && err.response.data && err.response.data.detail) {
+        setError(err.response.data.detail);
+      } else {
+        setError(
+          err.message || "An unexpected error occurred while applying instruction."
+        );
+      }
     } finally {
       setLoading(false);
     }
